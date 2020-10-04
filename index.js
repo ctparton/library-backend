@@ -1,4 +1,5 @@
 const { ApolloServer, gql } = require('apollo-server')
+const { v4: uuidv4 } = require('uuid');
 
 let authors = [
   {
@@ -89,7 +90,25 @@ const typeDefs = gql`
   type Query {
       bookCount: Int!
       authorCount: Int!
-      allBooks: [Book!]!
+      allBooks(name: String, genre: String): [Book!]!
+      allAuthors: [Author!]!
+  }
+  type Author {
+    name: String!
+    born: Int
+    bookCount: Int!
+  }
+  type Mutation {
+    addBook(
+      title: String!
+      published: Int!
+      author: String!
+      genres: [String]!
+    ) : Book
+    editAuthor(
+      name: String!
+      setBornTo: Int!
+    ) : Author
   }
 `
 
@@ -97,7 +116,43 @@ const resolvers = {
   Query: {
       bookCount: () => books.length,
       authorCount: () => authors.length,
-      allBooks: () => books
+      allBooks: (root, args) => {
+        if (args.name && args.genre) {
+          console.log("test")
+          console.log(args.genre)
+          return books.filter(book => book.author === args.name)
+              .filter(book => book.genres.includes(args.genre))
+        } else if (args.name) {
+          return books.filter(book => book.author === args.name)
+        } else if (args.genre) {
+          return books.filter(book => book.genres.includes(args.genre))
+        } else {
+          return books
+        }
+      },
+      allAuthors: () => authors
+  },
+  Author: {
+      bookCount: (root) => books.filter(book => book.author === root.name).length
+  },
+  Mutation: {
+      addBook: (root, args) => {
+        const author = authors.find(a => a.name === args.author)
+        author ? console.log(author) : authors = authors.concat({name: args.author})
+        const newBook = {...args, id: uuidv4()}
+        books = books.concat(newBook)
+        return newBook
+      },
+      editAuthor: (root, args) => {
+        const author = authors.find(a => a.name === args.name)
+        if (author) {
+          const newAuthor = {...args, born: args.setBornTo}
+          authors = authors.filter(a => a.name !== args.name).concat(newAuthor)
+          return newAuthor
+        } else {
+          return null
+        }
+      }
   }
 }
 
