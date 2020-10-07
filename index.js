@@ -159,6 +159,8 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  cors: {origin: '*',			// <- allow request from all domains
+    credentials: true}
 })
 
 server.listen().then(({ url }) => {
