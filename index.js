@@ -143,9 +143,23 @@ const resolvers = {
             throw new AuthenticationError("not authenticated")
         }
         let author = await Author.find({name: args.author})
-        console.log(`author id is ${typeof author[0]}`)
-        author ? console.log(author[0]._id) : author = await Author.save({name: args.author})
-        const newBook = new Book({title: args.title, published: args.published, genres: args.genres, author: author[0]._id})
+        let authorId
+        if (!author[0]) {
+            console.log(`author is undefined`)
+            const newAuthor = new Author({name: args.author})
+            try {
+                author = await newAuthor.save()
+            } catch (e) {
+                throw new UserInputError(e.message, {
+                    invalidArgs: args,
+                })
+            }
+            authorId =  author._id
+        } else {
+            authorId =  author[0]._id
+        }
+
+        const newBook = new Book({title: args.title, published: args.published, genres: args.genres, author: authorId})
         console.log(newBook)
         try {
             await newBook.save()
